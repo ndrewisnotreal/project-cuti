@@ -1,0 +1,46 @@
+/* Global Styles - Clean PrimeVue 4 */
+@use 'primeicons/primeicons.css';
+
+/* Utility Card styling using PrimeVue tokens */
+.card {
+    background-color: var(--p-surface-0);
+    border: 1px solid var(--p-surface-200);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+}
+
+:where(.app-dark, .app-dark *) .card {
+    background-color: var(--p-surface-900);
+    border-color: var(--p-surface-800);
+}
+
+// Secondary outlined button enhancement (solid canvas contrast)
+.p-button.p-button-outlined.p-button-secondary {
+    background-color: var(--p-surface-0);
+    border-color: var(--p-surface-300);
+    color: var(--p-surface-700);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+
+    &:hover {
+        background-color: var(--p-surface-50);
+        border-color: var(--p-surface-400);
+        color: var(--p-surface-900);
+    }
+}
+
+:where(.app-dark, .app-dark *) {
+    .p-button.p-button-outlined.p-button-secondary {
+        background-color: var(--p-surface-900);
+        border-color: var(--p-surface-700);
+        color: var(--p-surface-200);
+
+        &:hover {
+            background-color: var(--p-surface-800);
+            border-color: var(--p-surface-600);
+            color: var(--p-surface-0);
+        }
+    }
+}
+
