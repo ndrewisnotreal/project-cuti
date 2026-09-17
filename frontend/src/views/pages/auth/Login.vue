@@ -15,27 +15,11 @@ const rememberMe = ref(false);
 const errorMessage = ref('');
 const errorField = ref('');
 
-const demoAccounts = [
-    { label: 'User', role: 'Pemohon Cuti (Staff)', id: 'user@inalum.co.id', pass: 'password123' },
-    { label: 'Approver 1', role: 'Atasan Langsung (Approver L1)', id: 'approver1@inalum.co.id', pass: 'password123' },
-    { label: 'Approver 2', role: 'Kepala Departemen (Approver L2)', id: 'approver2@inalum.co.id', pass: 'password123' },
-    { label: 'Admin SIT', role: 'Administrator Divisi SIT', id: 'admin.sit@inalum.co.id', pass: 'password123' },
-    { label: 'Admin SIS', role: 'Administrator Divisi SIS', id: 'admin.sis@inalum.co.id', pass: 'password123' }
-];
-
 function onInput(field) {
     if (errorField.value === field || !errorField.value) {
         errorMessage.value = '';
         errorField.value = '';
     }
-}
-
-async function selectDemo(acc) {
-    identifier.value = acc.id;
-    password.value = acc.pass;
-    errorMessage.value = '';
-    errorField.value = '';
-    await handleLogin();
 }
 
 async function handleLogin() {
@@ -104,9 +88,7 @@ async function handleLogin() {
         <div class="w-full max-w-md bg-surface-0 dark:bg-surface-900 rounded-2xl p-8 shadow-sm border border-surface-200 dark:border-surface-800">
             <!-- Header Brand -->
             <div class="text-center mb-6">
-                <div class="w-14 h-14 rounded-2xl bg-primary text-white flex items-center justify-center mx-auto mb-3 shadow-xs">
-                    <i class="pi pi-calendar-plus text-2xl"></i>
-                </div>
+                <img src="/logo-inalum.png" alt="Logo PT INALUM" class="h-14 w-auto object-contain mx-auto mb-3" />
                 <h1 class="text-2xl font-black text-primary leading-tight tracking-tight">SiCuti</h1>
                 <p class="text-xs text-muted-color mt-1 font-medium">Sistem Manajemen Cuti Digital &bull; PT Indonesia Asahan Aluminium</p>
             </div>
@@ -172,25 +154,6 @@ async function handleLogin() {
                 <Button type="submit" label="Masuk ke Sistem" icon="pi pi-sign-in" class="w-full font-bold shadow-xs mt-2" />
             </form>
 
-            <!-- Quick Demo Login -->
-            <div class="mt-6 pt-5 border-t border-surface-200 dark:border-surface-800">
-                <span class="text-[11px] text-muted-color block font-semibold mb-2.5 text-center">Akun Demo Simulasi (Klik untuk masuk instan):</span>
-                <div class="space-y-1.5">
-                    <button
-                        v-for="acc in demoAccounts"
-                        :key="acc.id"
-                        type="button"
-                        @click="selectDemo(acc)"
-                        class="w-full p-2.5 text-left rounded-xl border border-surface-200 dark:border-surface-800 hover:border-primary hover:bg-primary/5 text-surface-700 dark:text-surface-300 transition-all cursor-pointer flex items-center justify-between group"
-                    >
-                        <div>
-                            <span class="text-xs font-bold block text-surface-900 dark:text-surface-100 group-hover:text-primary transition-colors">{{ acc.label }}</span>
-                            <span class="text-[10px] text-muted-color">{{ acc.role }}</span>
-                        </div>
-                        <i class="pi pi-arrow-right text-xs text-muted-color group-hover:text-primary transition-colors"></i>
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 </template>

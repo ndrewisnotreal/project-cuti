@@ -12,7 +12,7 @@ import {
 } from '@/service/sicutiService';
 import LeaveDetailDialog from './LeaveDetailDialog.vue';
 import { useToast } from 'primevue/usetoast';
-import { Plus, Search, Eye, Send, Trash2 } from 'lucide-vue-next';
+import { Plus, Search, Eye, Send, Trash2, Pencil } from 'lucide-vue-next';
 
 const toast = useToast();
 const selectedRequest = ref(null);
@@ -163,6 +163,15 @@ function cancelRequest(req) {
                                 title="Lihat Detail"
                             >
                                 <Eye :size="15" :stroke-width="1.75" />
+                            </button>
+                            <button
+                                v-if="data.status === 'draft' || data.status === 'returned'"
+                                type="button"
+                                class="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20 rounded-lg transition-colors cursor-pointer"
+                                @click="$router.push(`/leave/edit/${data.id}`)"
+                                title="Edit Draft"
+                            >
+                                <Pencil :size="15" :stroke-width="1.75" />
                             </button>
                             <button
                                 v-if="data.status === 'draft' || data.status === 'returned'"

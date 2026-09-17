@@ -19,6 +19,7 @@ import {
     ArrowRight,
     FolderOpen,
     Eye,
+    Pencil,
     ChevronLeft,
     ChevronRight
 } from 'lucide-vue-next';
@@ -252,16 +253,27 @@ function viewDetail(request) {
                                 <Tag :value="getStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" class="text-[11px]" />
                             </template>
                         </Column>
-                        <Column header="Aksi" style="width: 4rem; text-align: center">
+                        <Column header="Aksi" style="width: 5.5rem; text-align: center">
                             <template #body="{ data }">
-                                <button
-                                    type="button"
-                                    class="p-1.5 text-surface-500 hover:text-primary hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors cursor-pointer"
-                                    @click="viewDetail(data)"
-                                    title="Lihat Detail"
-                                >
-                                    <Eye :size="15" :stroke-width="1.75" />
-                                </button>
+                                <div class="flex items-center justify-center gap-1">
+                                    <button
+                                        type="button"
+                                        class="p-1.5 text-surface-500 hover:text-primary hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors cursor-pointer"
+                                        @click="viewDetail(data)"
+                                        title="Lihat Detail"
+                                    >
+                                        <Eye :size="15" :stroke-width="1.75" />
+                                    </button>
+                                    <button
+                                        v-if="data.status === 'draft' || data.status === 'returned'"
+                                        type="button"
+                                        class="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20 rounded-lg transition-colors cursor-pointer"
+                                        @click="$router.push(`/leave/edit/${data.id}`)"
+                                        title="Edit Draft"
+                                    >
+                                        <Pencil :size="15" :stroke-width="1.75" />
+                                    </button>
+                                </div>
                             </template>
                         </Column>
                     </DataTable>

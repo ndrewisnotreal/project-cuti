@@ -128,5 +128,32 @@ assert.strictEqual(reqRole.status, 'pending', 'New role request should be pendin
 const approvedRole = approveRoleChangeRequest(reqRole.id, 'Disetujui manajemen', 'Admin SIT');
 assert.strictEqual(approvedRole, true, 'Role request approval should succeed');
 assert.strictEqual(sicutiState.users.find(u => u.id === 'USR001').role, 'approval', 'User role should change to approval');
+// 8. Test Draft Creation & Editing
+const draftReq = createLeaveRequest({
+  userId: 'USR001',
+  leaveTypeId: 'LT001',
+  startDate: '2026-11-02',
+  endDate: '2026-11-03',
+  totalDays: 2,
+  reason: 'Draft liburan keluarga',
+  status: 'draft'
+});
+assert.strictEqual(draftReq.status, 'draft', 'Status should be draft');
+
+// Edit draft
+import { updateLeaveRequest } from './src/service/sicutiService.js';
+const updatedDraft = updateLeaveRequest(draftReq.id, {
+  reason: 'Draft liburan keluarga (revisi)',
+  totalDays: 3,
+  endDate: '2026-11-04'
+});
+assert.strictEqual(updatedDraft.reason, 'Draft liburan keluarga (revisi)', 'Draft reason should be updated');
+assert.strictEqual(updatedDraft.totalDays, 3, 'Draft totalDays should be updated');
+assert.strictEqual(updatedDraft.status, 'draft', 'Draft status should remain draft after edit');
+
+// Submit edited draft
+const submittedReq = updateLeaveRequest(draftReq.id, { status: 'submitted' });
+assert.strictEqual(submittedReq.status, 'submitted', 'Draft status should become submitted');
+
 
 console.log('ALL ASSERTIONS PASSED! Self-check completed successfully.');

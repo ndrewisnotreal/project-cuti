@@ -21,6 +21,11 @@ const router = createRouter({
                     component: () => import('@/views/sicuti/LeaveForm.vue')
                 },
                 {
+                    path: '/leave/edit/:id',
+                    name: 'leave-edit',
+                    component: () => import('@/views/sicuti/LeaveForm.vue')
+                },
+                {
                     path: '/leave/history',
                     name: 'leave-history',
                     component: () => import('@/views/sicuti/LeaveHistory.vue')

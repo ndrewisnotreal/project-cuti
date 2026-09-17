@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import {
     currentUser,
     activeRole,
@@ -16,7 +17,7 @@ import {
     deleteLeaveRequest
 } from '@/service/sicutiService';
 import { useToast } from 'primevue/usetoast';
-import { FileText, Printer, X, Undo2, Check } from 'lucide-vue-next';
+import { FileText, Printer, X, Undo2, Check, Pencil } from 'lucide-vue-next';
 
 const props = defineProps({
     visible: Boolean,
@@ -25,6 +26,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:visible', 'refresh']);
 const toast = useToast();
+const router = useRouter();
 
 const actionDialog = ref({
     type: '',
@@ -42,10 +44,20 @@ const canApprove = computed(() => {
     return canUserApprove(props.request, currentUser.value);
 });
 
+const canEdit = computed(() => {
+    if (!props.request || activeRole.value !== 'user') return false;
+    return props.request.userId === currentUser.value?.id && ['draft', 'returned'].includes(props.request.status);
+});
+
 const canCancel = computed(() => {
     if (!props.request || activeRole.value !== 'user') return false;
     return props.request.userId === currentUser.value?.id && ['draft', 'submitted'].includes(props.request.status);
 });
+
+function editRequest() {
+    emit('update:visible', false);
+    router.push(`/leave/edit/${props.request.id}`);
+}
 
 const isApproved = computed(() => props.request?.status === 'approved');
 
@@ -276,6 +288,17 @@ function printDocument() {
                     <Button label="Tutup" severity="secondary" size="small" text class="text-xs font-medium" @click="emit('update:visible', false)" />
                 </div>
                 <div class="flex flex-wrap items-center justify-end gap-2">
+                    <Button
+                        v-if="canEdit"
+                        severity="warn"
+                        size="small"
+                        outlined
+                        class="text-xs font-semibold flex items-center gap-1.5"
+                        @click="editRequest"
+                    >
+                        <Pencil :size="14" :stroke-width="1.75" />
+                        <span>Edit Draft</span>
+                    </Button>
                     <Button v-if="canCancel" severity="danger" size="small" text class="text-xs font-semibold flex items-center gap-1.5" @click="handleCancelRequest">
                         <X :size="14" :stroke-width="2" />
                         <span>Batalkan Pengajuan</span>

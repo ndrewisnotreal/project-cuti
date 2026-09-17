@@ -36,10 +36,10 @@ const InalumPreset = definePreset(Aura, {
                     activeColor: '#004f7d'
                 },
                 highlight: {
-                    background: '#eff8ff',
-                    focusBackground: '#dceeff',
-                    color: '#0077b8',
-                    focusColor: '#00649b'
+                    background: '#f1f5f9',
+                    focusBackground: '#e2e8f0',
+                    color: '#0f172a',
+                    focusColor: '#0f172a'
                 }
             },
             dark: {
@@ -50,11 +50,18 @@ const InalumPreset = definePreset(Aura, {
                     activeColor: '#b9ddff'
                 },
                 highlight: {
-                    background: 'rgba(0, 119, 184, 0.16)',
-                    focusBackground: 'rgba(0, 119, 184, 0.24)',
-                    color: 'rgba(255,255,255,.87)',
-                    focusColor: 'rgba(255,255,255,.87)'
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    focusBackground: 'rgba(255, 255, 255, 0.12)',
+                    color: '#f8fafc',
+                    focusColor: '#ffffff'
                 }
+            }
+        }
+    },
+    components: {
+        datepicker: {
+            date: {
+                borderRadius: '6px'
             }
         }
     }

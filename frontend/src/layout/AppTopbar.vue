@@ -4,8 +4,6 @@ import {
     currentUser,
     activeRole,
     switchRole,
-    switchPersona,
-    DEMO_PERSONAS,
     logout,
     sicutiState,
     getNotifications,
@@ -48,12 +46,6 @@ const isApproverUser = computed(() => {
     const role = currentUser.value?.role;
     return ['staff_it', 'kepala_it', 'kepala_dept', 'approval'].includes(role);
 });
-
-function handlePersonaChange(userId) {
-    if (!userId) return;
-    switchPersona(userId);
-    router.push('/');
-}
 
 function handleModeChange(mode) {
     switchRole(mode);
@@ -110,9 +102,7 @@ const isApprovalRole = computed(() => ['staff_it', 'kepala_it', 'kepala_dept', '
                 <component :is="isSidebarCollapsed ? PanelLeft : PanelLeftClose" :size="18" :stroke-width="1.75" />
             </button>
             <router-link to="/" class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-xs">
-                    <CalendarDays :size="18" :stroke-width="1.75" />
-                </div>
+                <img src="/logo-inalum.png" alt="Logo PT INALUM" class="h-8 w-auto object-contain" />
                 <div class="flex flex-col">
                     <span class="font-bold text-base leading-tight text-primary">SiCuti</span>
                     <span class="text-[10px] text-muted-color font-normal">PT Indonesia Asahan Aluminium</span>
@@ -148,20 +138,6 @@ const isApprovalRole = computed(() => ['staff_it', 'kepala_it', 'kepala_dept', '
 
         <!-- Right: Persona Switcher + Notif Bell + Dark Mode -->
         <div class="flex items-center gap-2 sm:gap-3">
-            <!-- Persona Switcher -->
-            <div class="hidden lg:flex items-center gap-2">
-                <span class="text-[11px] font-medium text-muted-color whitespace-nowrap">Simulasi Akun:</span>
-                <Select
-                    :modelValue="currentUser?.id"
-                    @update:modelValue="handlePersonaChange"
-                    :options="DEMO_PERSONAS"
-                    optionLabel="title"
-                    optionValue="id"
-                    class="w-60 text-xs"
-                    size="small"
-                />
-            </div>
-
             <!-- Notification Bell -->
             <div class="relative">
                 <button

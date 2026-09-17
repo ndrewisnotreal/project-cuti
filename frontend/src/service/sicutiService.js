@@ -18,7 +18,7 @@ import {
 const STORAGE_KEY = 'sicuti_data';
 const AUTH_KEY = 'sicuti_auth';
 const TOKEN_KEY = 'sicuti_token';
-const DATA_VERSION = '5.0';
+const DATA_VERSION = '5.1';
 
 const API_BASE = typeof window !== 'undefined'
   ? (window.location.port === '5174' ? '' : 'http://localhost:3001')
@@ -116,6 +116,68 @@ function mergeUsersWithDefaults(storedUsers) {
   return merged;
 }
 
+function mergeLeaveTypesWithDefaults(storedTypes) {
+  const defaults = JSON.parse(JSON.stringify(DEFAULT_LEAVE_TYPES));
+  if (!Array.isArray(storedTypes) || storedTypes.length === 0) return defaults;
+
+  const validStored = storedTypes.filter((t) => t && (t.name || t.code));
+  const result = [];
+  const seenIds = new Set();
+
+  for (const item of validStored) {
+    const matchDef = defaults.find(
+      (d) =>
+        (item.code && d.code && d.code.toUpperCase() === item.code.toUpperCase()) ||
+        (item.name && d.name && d.name.toLowerCase() === item.name.toLowerCase()) ||
+        (item.id && d.id === item.id)
+    );
+
+    let id = item.id || (matchDef ? matchDef.id : null) || (item.code ? 'LT_' + item.code : 'LT' + (result.length + 1));
+    const code = item.code || (matchDef ? matchDef.code : 'LT' + (result.length + 1));
+    const name = item.name || (matchDef ? matchDef.name : 'Jenis Cuti');
+    const usesQuota = item.usesQuota !== undefined ? Boolean(item.usesQuota) : (matchDef ? matchDef.usesQuota : false);
+    const requiresDocument = item.requiresDocument !== undefined ? Boolean(item.requiresDocument) : (matchDef ? matchDef.requiresDocument : false);
+    const isActive = item.isActive !== undefined ? Boolean(item.isActive) : true;
+    const description = item.description || (matchDef ? matchDef.description : '');
+
+    if (seenIds.has(id)) {
+      id = id + '_' + (result.length + 1);
+    }
+    seenIds.add(id);
+
+    result.push({
+      id,
+      code,
+      name,
+      description,
+      usesQuota,
+      requiresDocument,
+      isActive
+    });
+  }
+
+  for (const def of defaults) {
+    const exists = result.some(
+      (r) => r.id === def.id || (r.code && def.code && r.code.toUpperCase() === def.code.toUpperCase())
+    );
+    if (!exists) {
+      result.push(def);
+    }
+  }
+
+  // Preserve default sorting order (CT, CS, CM, CK, CH, CI)
+  result.sort((a, b) => {
+    const idxA = defaults.findIndex((d) => d.code === a.code || d.id === a.id);
+    const idxB = defaults.findIndex((d) => d.code === b.code || d.id === b.id);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  return result;
+}
+
 function loadStoredData() {
   const defaults = {
     _version: DATA_VERSION,
@@ -151,7 +213,7 @@ function loadStoredData() {
       _version: DATA_VERSION,
       users: parsed.users ? mergeUsersWithDefaults(parsed.users) : defaults.users,
       departments: parsed.departments || defaults.departments,
-      leaveTypes: parsed.leaveTypes || defaults.leaveTypes,
+      leaveTypes: parsed.leaveTypes ? mergeLeaveTypesWithDefaults(parsed.leaveTypes) : defaults.leaveTypes,
       leavePolicy: parsed.leavePolicy || defaults.leavePolicy,
       holidays: parsed.holidays || defaults.holidays,
       leaveBalances: parsed.leaveBalances || defaults.leaveBalances,
@@ -258,14 +320,14 @@ export async function syncFromBackend() {
     }
 
     if (leaveTypes?.data && Array.isArray(leaveTypes.data)) {
-      sicutiState.leaveTypes = leaveTypes.data.map((t) => ({
-        id: t.id_leave_type,
-        code: t.kd_leave_type,
-        name: t.nm_leave_type,
+      sicutiState.leaveTypes = leaveTypes.data.map((t, idx) => ({
+        id: t.kd_leave_type || t.id_leave_type || t.id || (t.code ? 'LT_' + t.code : 'LT' + (idx + 1)),
+        code: t.code || t.kd_leave_type || `LT${idx + 1}`,
+        name: t.nm_leave_type || t.name,
         description: t.description || '',
-        usesQuota: Boolean(t.is_paid),
-        requiresDocument: Boolean(t.requires_attachment),
-        isActive: Boolean(t.is_active)
+        usesQuota: Boolean(t.uses_quota ?? t.is_paid ?? t.usesQuota),
+        requiresDocument: Boolean(t.requires_document ?? t.requires_attachment ?? t.requiresDocument),
+        isActive: Boolean(t.is_active ?? t.isActive)
       }));
     }
 
@@ -623,6 +685,35 @@ export function updateLeaveRequest(id, payload) {
     updatedAt: new Date().toISOString()
   });
   saveToLocalStorage();
+
+  if (payload.status === 'submitted') {
+    const item = sicutiState.leaveRequests[idx];
+    (async () => {
+      try {
+        const res = await apiFetch('/sicuti/leave-request', {
+          method: 'POST',
+          body: JSON.stringify({
+            id_leave_type: item.leaveTypeId,
+            start_date: item.startDate,
+            end_date: item.endDate,
+            total_days: item.totalDays,
+            reason: item.reason,
+            substitute_id: item.substituteId || undefined,
+            status: 'submitted',
+            attachment_url: item.documents?.[0]?.fileName || undefined
+          })
+        });
+        if (res?.data?.id_request) {
+          item.id = res.data.id_request;
+          saveToLocalStorage();
+        }
+        syncFromBackend();
+      } catch (e) {
+        console.warn('[updateLeaveRequest] backend sync failed:', e.message);
+      }
+    })();
+  }
+
   return sicutiState.leaveRequests[idx];
 }
 

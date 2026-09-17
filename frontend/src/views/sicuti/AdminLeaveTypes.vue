@@ -23,8 +23,15 @@ const currentType = ref({
 
 function openAdd() {
     isEditing.value = false;
+    const existingNums = sicutiState.leaveTypes
+        .map((t) => {
+            const m = String(t.id || '').match(/\d+/);
+            return m ? parseInt(m[0], 10) : 0;
+        })
+        .filter((n) => !isNaN(n));
+    const nextNum = (existingNums.length ? Math.max(...existingNums) : 0) + 1;
     currentType.value = {
-        id: 'LT' + String(sicutiState.leaveTypes.length + 1).padStart(3, '0'),
+        id: 'LT' + String(nextNum).padStart(3, '0'),
         code: '',
         name: '',
         description: '',

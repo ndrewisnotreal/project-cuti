@@ -1,18 +1,24 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import {
     currentUser,
     getUserBalance,
     sicutiState,
     calculateWorkingDays,
-    createLeaveRequest
+    createLeaveRequest,
+    updateLeaveRequest
 } from '@/service/sicutiService';
 import { useToast } from 'primevue/usetoast';
-import { ArrowLeft, Calendar, UploadCloud, FileText, X, Save, Send, Wallet, History, Workflow } from 'lucide-vue-next';
+import { ArrowLeft, Calendar, UploadCloud, FileText, X, Save, Send, History } from 'lucide-vue-next';
 
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
+
+const editId = computed(() => route.params.id || route.query.id || null);
+const isEditing = computed(() => Boolean(editId.value));
+let isFormLoaded = false;
 
 const form = ref({
     leaveTypeId: 'LT001',
@@ -26,6 +32,41 @@ const form = ref({
 
 const isSubmitting = ref(false);
 
+function loadDraftData() {
+    if (!editId.value) return;
+    const req = sicutiState.leaveRequests.find((r) => r.id === editId.value);
+    if (!req) return;
+    if (!['draft', 'returned'].includes(req.status)) {
+        toast.add({
+            severity: 'warn',
+            summary: 'Peringatan',
+            detail: 'Hanya pengajuan berstatus draft atau dikembalikan yang dapat diedit',
+            life: 4000
+        });
+        router.push('/leave/history');
+        return;
+    }
+    isFormLoaded = true;
+    form.value.leaveTypeId = req.leaveTypeId;
+    form.value.startDate = parseToDate(req.startDate);
+    form.value.endDate = parseToDate(req.endDate);
+    form.value.reason = req.reason || '';
+    form.value.substituteId = req.substituteId || '';
+    if (req.documents && req.documents.length > 0) {
+        form.value.documentName = req.documents[0].fileName;
+    }
+}
+
+watch(
+    () => [editId.value, sicutiState.leaveRequests],
+    () => {
+        if (editId.value && !isFormLoaded) {
+            loadDraftData();
+        }
+    },
+    { immediate: true }
+);
+
 const userBalance = computed(() => {
     return getUserBalance(currentUser.value?.id);
 });
@@ -35,7 +76,13 @@ const activeLeaveTypes = computed(() => {
 });
 
 const selectedLeaveType = computed(() => {
-    return sicutiState.leaveTypes.find((t) => t.id === form.value.leaveTypeId);
+    return sicutiState.leaveTypes.find((t) => t.id === form.value.leaveTypeId || (t.code && t.code === form.value.leaveTypeId));
+});
+
+watch(selectedLeaveType, (newType, oldType) => {
+    if (oldType && !newType?.requiresDocument) {
+        removeFile();
+    }
 });
 
 const colleagueOptions = computed(() => {
@@ -56,6 +103,31 @@ function formatDate(d) {
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 }
+
+function parseToDate(val) {
+    if (!val) return null;
+    if (val instanceof Date) return val;
+    if (typeof val === 'string') {
+        const parts = val.split('-');
+        if (parts.length === 3) {
+            return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        }
+        return new Date(val);
+    }
+    return null;
+}
+
+const minEndDate = computed(() => {
+    return parseToDate(form.value.startDate);
+});
+
+watch(() => form.value.startDate, (newStart) => {
+    const sDate = parseToDate(newStart);
+    const eDate = parseToDate(form.value.endDate);
+    if (sDate && eDate && eDate < sDate) {
+        form.value.endDate = newStart;
+    }
+});
 
 const calculatedDays = computed(() => {
     const s = formatDate(form.value.startDate);
@@ -122,6 +194,7 @@ function validateForm() {
 
     // Check conflict with existing active leaves
     const hasConflict = sicutiState.leaveRequests.some((r) => {
+        if (editId.value && r.id === editId.value) return false;
         if (r.userId !== currentUser.value?.id) return false;
         if (['cancelled', 'rejected'].includes(r.status)) return false;
         return (s <= r.endDate && e >= r.startDate);
@@ -152,26 +225,48 @@ function submitLeave(status = 'submitted') {
             ? [{ fileName: form.value.documentName, fileType: 'pdf', fileSize: 150000 }]
             : [];
 
-        const newReq = createLeaveRequest({
-            userId: currentUser.value?.id,
-            leaveTypeId: form.value.leaveTypeId,
-            startDate: s,
-            endDate: e,
-            totalDays: calculatedDays.value,
-            reason: form.value.reason,
-            substituteId: form.value.substituteId || null,
-            status,
-            documents
-        });
+        if (isEditing.value) {
+            updateLeaveRequest(editId.value, {
+                leaveTypeId: form.value.leaveTypeId,
+                startDate: s,
+                endDate: e,
+                totalDays: calculatedDays.value,
+                reason: form.value.reason,
+                substituteId: form.value.substituteId || null,
+                status,
+                documents
+            });
 
-        toast.add({
-            severity: 'success',
-            summary: status === 'draft' ? 'Draft Disimpan' : 'Berhasil Dikirim',
-            detail: status === 'draft'
-                ? `Pengajuan ${newReq.id} disimpan sebagai draft`
-                : `Pengajuan ${newReq.id} telah dikirim ke Atasan untuk validasi`,
-            life: 4000
-        });
+            toast.add({
+                severity: 'success',
+                summary: status === 'draft' ? 'Draft Disimpan' : 'Berhasil Dikirim',
+                detail: status === 'draft'
+                    ? `Perubahan draft ${editId.value} berhasil disimpan`
+                    : `Pengajuan ${editId.value} telah dikirim ke Atasan untuk validasi`,
+                life: 4000
+            });
+        } else {
+            const newReq = createLeaveRequest({
+                userId: currentUser.value?.id,
+                leaveTypeId: form.value.leaveTypeId,
+                startDate: s,
+                endDate: e,
+                totalDays: calculatedDays.value,
+                reason: form.value.reason,
+                substituteId: form.value.substituteId || null,
+                status,
+                documents
+            });
+
+            toast.add({
+                severity: 'success',
+                summary: status === 'draft' ? 'Draft Disimpan' : 'Berhasil Dikirim',
+                detail: status === 'draft'
+                    ? `Pengajuan ${newReq.id} disimpan sebagai draft`
+                    : `Pengajuan ${newReq.id} telah dikirim ke Atasan untuk validasi`,
+                life: 4000
+            });
+        }
 
         router.push('/leave/history');
     } catch (err) {
@@ -199,9 +294,11 @@ function submitLeave(status = 'submitted') {
                     <div class="flex items-center gap-1.5 text-[11px] text-muted-color mb-0.5">
                         <router-link to="/" class="hover:text-primary transition-colors">Dashboard</router-link>
                         <span>/</span>
-                        <span class="text-surface-700 dark:text-surface-300 font-medium">Pengajuan Cuti</span>
+                        <span class="text-surface-700 dark:text-surface-300 font-medium">{{ isEditing ? 'Edit Draft' : 'Pengajuan Cuti' }}</span>
                     </div>
-                    <h2 class="text-xl font-bold text-surface-900 dark:text-surface-100 leading-tight">Formulir Pengajuan Cuti</h2>
+                    <h2 class="text-xl font-bold text-surface-900 dark:text-surface-100 leading-tight">
+                        {{ isEditing ? `Edit Draft Pengajuan (${editId})` : 'Formulir Pengajuan Cuti' }}
+                    </h2>
                 </div>
             </div>
             <router-link
@@ -213,9 +310,13 @@ function submitLeave(status = 'submitted') {
             </router-link>
         </div>
 
-        <div class="grid grid-cols-12 gap-6">
-            <!-- Form Input Panel -->
-            <div class="col-span-12 lg:col-span-8 card border border-surface-200 dark:border-surface-700 p-6 rounded-2xl bg-surface-0 dark:bg-surface-900 shadow-sm space-y-5">
+        <!-- Mode Edit Notice Banner -->
+        <div v-if="isEditing" class="p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 rounded-xl text-amber-800 dark:text-amber-200 text-xs flex items-center justify-between">
+            <span>Mode Edit Draft: Perubahan yang Anda simpan akan memperbarui berkas <b>{{ editId }}</b>.</span>
+        </div>
+
+        <!-- Form Input Panel -->
+        <div class="card border border-surface-200 dark:border-surface-700 p-6 sm:p-8 rounded-2xl bg-surface-0 dark:bg-surface-900 shadow-sm space-y-5">
                 <!-- Jenis Cuti -->
                 <div>
                     <label class="block text-xs font-bold text-surface-800 dark:text-surface-200 mb-1.5">
@@ -226,13 +327,14 @@ function submitLeave(status = 'submitted') {
                         :options="activeLeaveTypes"
                         optionLabel="name"
                         optionValue="id"
+                        dataKey="id"
                         placeholder="Pilih Jenis Cuti"
                         class="w-full text-xs"
                     />
-                    <small v-if="selectedLeaveType?.description" class="text-[11px] text-muted-color block mt-1">
+                    <small v-if="selectedLeaveType?.description" class="text-[11px] text-surface-500 dark:text-surface-400 block mt-1">
                         {{ selectedLeaveType.description }}
-                        <span v-if="selectedLeaveType.usesQuota" class="font-semibold text-primary"> (Mengurangi kuota tahunan)</span>
-                        <span v-else class="font-semibold text-blue-600"> (Tidak mengurangi kuota)</span>
+                        <span v-if="selectedLeaveType.usesQuota" class="font-medium text-surface-600 dark:text-surface-300"> (Mengurangi kuota tahunan)</span>
+                        <span v-else class="font-medium text-surface-600 dark:text-surface-300"> (Tidak mengurangi kuota)</span>
                     </small>
                 </div>
 
@@ -256,6 +358,7 @@ function submitLeave(status = 'submitted') {
                         </label>
                         <DatePicker
                             v-model="form.endDate"
+                            :minDate="minEndDate"
                             dateFormat="yy-mm-dd"
                             placeholder="Pilih Tanggal Selesai"
                             class="w-full text-xs"
@@ -310,12 +413,10 @@ function submitLeave(status = 'submitted') {
                     />
                 </div>
 
-                <!-- Dokumen Pendukung -->
-                <div>
+                <!-- Dokumen Pendukung (Hanya tampil jika jenis cuti mewajibkan dokumen) -->
+                <div v-if="selectedLeaveType?.requiresDocument">
                     <label class="block text-xs font-bold text-surface-800 dark:text-surface-200 mb-1.5">
-                        Dokumen Pendukung
-                        <span v-if="selectedLeaveType?.requiresDocument" class="text-red-500">* (Wajib diunggah)</span>
-                        <span v-else class="text-muted-color font-normal"> (Opsional)</span>
+                        Dokumen Pendukung <span class="text-red-500">* (Wajib diunggah)</span>
                     </label>
 
                     <div v-if="!form.documentName" class="border-2 border-dashed border-surface-300 dark:border-surface-700 rounded-xl p-4 text-center hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors">
@@ -360,7 +461,7 @@ function submitLeave(status = 'submitted') {
                             @click="submitLeave('draft')"
                         >
                             <Save :size="14" :stroke-width="1.75" />
-                            <span>Simpan Draft</span>
+                            <span>{{ isEditing ? 'Simpan Perubahan Draft' : 'Simpan Draft' }}</span>
                         </Button>
                         <Button
                             severity="success"
@@ -370,55 +471,10 @@ function submitLeave(status = 'submitted') {
                             @click="submitLeave('submitted')"
                         >
                             <Send :size="14" :stroke-width="2" />
-                            <span>Kirim Pengajuan</span>
+                            <span>{{ isEditing ? 'Kirim Pengajuan Sekarang' : 'Kirim Pengajuan' }}</span>
                         </Button>
                     </div>
                 </div>
             </div>
-
-            <!-- Right Summary Info Panel -->
-            <div class="col-span-12 lg:col-span-4 space-y-4">
-                <!-- Saldo Card -->
-                <div class="card border border-surface-200 dark:border-surface-700 p-5 rounded-2xl bg-surface-0 dark:bg-surface-900 shadow-sm">
-                    <div class="flex items-center gap-2 mb-3 text-primary font-bold text-sm">
-                        <Wallet :size="16" :stroke-width="1.75" />
-                        <span>Informasi Saldo Anda</span>
-                    </div>
-
-                    <div class="space-y-2.5 text-xs">
-                        <div class="flex justify-between py-1 border-b border-surface-100 dark:border-surface-800">
-                            <span class="text-muted-color">Kuota Tahunan:</span>
-                            <span class="font-semibold">{{ userBalance.annualQuota }} Hari</span>
-                        </div>
-                        <div class="flex justify-between py-1 border-b border-surface-100 dark:border-surface-800">
-                            <span class="text-muted-color">Carry Over (Sisa Lalu):</span>
-                            <span class="font-semibold">{{ userBalance.carryOverDays }} Hari</span>
-                        </div>
-                        <div class="flex justify-between py-1 border-b border-surface-100 dark:border-surface-800">
-                            <span class="text-muted-color">Sudah Digunakan:</span>
-                            <span class="font-semibold text-primary">{{ userBalance.usedDays }} Hari</span>
-                        </div>
-                        <div class="flex justify-between py-2 font-bold text-sm bg-primary/10 p-2.5 rounded-xl text-primary">
-                            <span>Sisa Saldo Cuti:</span>
-                            <span class="text-base">{{ userBalance.remaining }} Hari</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Alur Persetujuan Ringkas -->
-                <div class="card border border-surface-200 dark:border-surface-700 p-5 rounded-2xl bg-surface-0 dark:bg-surface-900 shadow-sm">
-                    <div class="flex items-center gap-2 mb-3 text-surface-800 dark:text-surface-200 font-bold text-xs uppercase tracking-wider">
-                        <Workflow :size="16" :stroke-width="1.75" class="text-primary" />
-                        <span>Alur Persetujuan</span>
-                    </div>
-                    <ol class="text-xs space-y-2.5 text-muted-color list-decimal list-inside">
-                        <li>Karyawan mengajukan formulir cuti online</li>
-                        <li>Validasi oleh <b>Staff IT / Atasan Langsung</b></li>
-                        <li>Persetujuan oleh <b>Kepala Seksi Divisi</b></li>
-                        <li>Status pengajuan otomatis menjadi <b>Disetujui</b></li>
-                    </ol>
-                </div>
-            </div>
         </div>
-    </div>
 </template>

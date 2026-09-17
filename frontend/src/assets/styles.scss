@@ -44,3 +44,26 @@
     }
 }
 
+/* Flat neutral styling for PrimeVue Select items */
+.p-select-option.p-select-option-selected {
+    background-color: var(--p-surface-100) !important;
+    color: var(--p-surface-900) !important;
+    font-weight: 600;
+}
+
+:where(.app-dark, .app-dark *) .p-select-option.p-select-option-selected {
+    background-color: var(--p-surface-800) !important;
+    color: var(--p-surface-100) !important;
+}
+
+/* DatePicker: square with rounded corners instead of circle */
+.p-datepicker-day,
+.p-datepicker-day-cell .p-datepicker-day {
+    border-radius: 6px !important;
+}
+
+.p-datepicker-day.p-datepicker-day-selected {
+    border-radius: 6px !important;
+}
+
+

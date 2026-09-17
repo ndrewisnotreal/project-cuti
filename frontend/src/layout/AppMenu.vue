@@ -39,21 +39,27 @@ const model = computed(() => {
 
     if (role === 'user') {
         const userItems = [
-            { label: 'Dashboard Karyawan', icon: LayoutDashboard, to: '/' }
+            { label: 'Dashboard', icon: LayoutDashboard, to: '/' }
         ];
         if (hasPermission(userRole, 'pengajuan_cuti', 'submit')) {
-            userItems.push({ label: 'Ajukan Cuti Baru', icon: CalendarPlus, to: '/leave/new' });
+            userItems.push({ label: 'Ajukan Cuti', icon: CalendarPlus, to: '/leave/new' });
         }
         if (hasPermission(userRole, 'dokumen_saldo', 'view_history')) {
-            userItems.push({ label: 'Riwayat Cuti Saya', icon: History, to: '/leave/history' });
+            userItems.push({ label: 'Riwayat Cuti', icon: History, to: '/leave/history' });
         }
         if (hasPermission(userRole, 'dokumen_saldo', 'view_balance')) {
-            userItems.push({ label: 'Saldo Cuti Saya', icon: Wallet, to: '/leave/balance' });
+            userItems.push({ label: 'Saldo Cuti', icon: Wallet, to: '/leave/balance' });
         }
         return [
             {
-                label: 'Menu Karyawan',
-                items: userItems
+                label: 'Menu Utama',
+                items: [
+                    { label: 'Dashboard', icon: LayoutDashboard, to: '/' }
+                ]
+            },
+            {
+                label: 'Manajemen Cuti',
+                items: userItems.slice(1)
             }
         ];
     }
