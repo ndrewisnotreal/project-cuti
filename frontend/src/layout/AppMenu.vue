@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { activeRole, currentUser, sicutiState, hasPermission } from '@/service/sicutiService';
+import { activeRole, currentUser, sicutiState, hasPermission, canUserApprove } from '@/service/sicutiService';
 import {
     LayoutDashboard,
     CalendarPlus,
@@ -28,8 +28,9 @@ const props = defineProps({
 const emit = defineEmits(['item-click']);
 
 const pendingApprovalCount = computed(() => {
+    if (!currentUser.value) return 0;
     return sicutiState.leaveRequests.filter(
-        (r) => r.status === 'submitted' || r.status === 'pending_validation'
+        (r) => (r.status === 'submitted' || r.status === 'pending_validation') && canUserApprove(r, currentUser.value)
     ).length;
 });
 

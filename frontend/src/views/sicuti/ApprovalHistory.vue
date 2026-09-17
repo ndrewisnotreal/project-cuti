@@ -18,16 +18,19 @@ const searchQuery = ref('');
 const statusFilter = ref(null);
 
 const statusOptions = [
-    { label: 'Semua Status Selesai', value: null },
-    { label: 'Disetujui (Approved)', value: 'approved' },
+    { label: 'Semua Riwayat Persetujuan', value: null },
+    { label: 'Menunggu Persetujuan Lanjutan', value: 'pending_validation' },
+    { label: 'Disetujui Penuh (Approved)', value: 'approved' },
     { label: 'Ditolak (Rejected)', value: 'rejected' },
     { label: 'Dikembalikan (Returned)', value: 'returned' }
 ];
 
 const processedRequests = computed(() => {
     return sicutiState.leaveRequests.filter((r) => {
-        const isProcessed = ['approved', 'rejected', 'returned', 'completed'].includes(r.status);
-        if (!isProcessed) return false;
+        const userId = currentUser.value?.id;
+        const myRecord = r.approvalRecords?.some((a) => a.approverId === userId);
+        const isCompleted = ['approved', 'rejected', 'returned', 'completed'].includes(r.status);
+        if (!myRecord && !isCompleted) return false;
 
         if (statusFilter.value && r.status !== statusFilter.value) {
             return false;
@@ -131,7 +134,7 @@ function viewDetail(req) {
                 </Column>
                 <Column header="Periode & Durasi" style="width: 22%">
                     <template #body="{ data }">
-                        <div>{{ formatDate(data.startDate) }} s/d {{ formatDate(data.endDate) }}</div>
+                        <div>{{ formatDate(data.startDate) }} - {{ formatDate(data.endDate) }}</div>
                         <div class="font-bold text-surface-700 dark:text-surface-300 text-[11px]">{{ data.totalDays }} Hari Kerja</div>
                     </template>
                 </Column>

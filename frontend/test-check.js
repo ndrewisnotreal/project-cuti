@@ -92,7 +92,7 @@ import {
   rejectRoleChangeRequest,
   createRoleChangeRequest
 } from './src/service/sicutiService.js';
-assert.strictEqual(formatDate('2026-09-14'), '14 Sep 2026', 'formatDate should format correctly');
+assert.strictEqual(formatDate('2026-09-14'), '14 September 2026', 'formatDate should format correctly');
 assert.ok(DEMO_PERSONAS.length >= 4, 'Demo personas should be configured');
 switchPersona('ADM001');
 assert.strictEqual(currentUser.value.id, 'ADM001', 'Persona switch should update currentUser');
@@ -154,6 +154,44 @@ assert.strictEqual(updatedDraft.status, 'draft', 'Draft status should remain dra
 // Submit edited draft
 const submittedReq = updateLeaveRequest(draftReq.id, { status: 'submitted' });
 assert.strictEqual(submittedReq.status, 'submitted', 'Draft status should become submitted');
+
+
+// 9. Test Granular Notifications & Read State
+import {
+  getNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  formatTimeAgo
+} from './src/service/sicutiService.js';
+
+// Test formatTimeAgo
+assert.strictEqual(formatTimeAgo(new Date().toISOString()), 'Baru saja', 'formatTimeAgo should return Baru saja for now');
+
+// User notifications
+const userNotifs = getNotifications('USR001', 'user');
+assert.ok(Array.isArray(userNotifs), 'Notifications should be an array');
+assert.ok(userNotifs.length > 0, 'User should have notifications');
+const firstNotif = userNotifs[0];
+assert.ok(firstNotif.id, 'Notif should have an id');
+assert.ok(firstNotif.title, 'Notif should have a title');
+assert.ok(firstNotif.message, 'Notif should have a message');
+assert.ok(firstNotif.type, 'Notif should have a type');
+assert.strictEqual(typeof firstNotif.isRead, 'boolean', 'isRead should be a boolean');
+
+// Test mark as read
+markNotificationAsRead(firstNotif.id);
+const recheckedNotifs = getNotifications('USR001', 'user');
+const recheckedItem = recheckedNotifs.find(n => n.id === firstNotif.id);
+assert.strictEqual(recheckedItem.isRead, true, 'Notification should be marked as read');
+
+// Test mark all as read
+markAllNotificationsAsRead('USR001', 'user');
+const allReadNotifs = getNotifications('USR001', 'user');
+assert.ok(allReadNotifs.every(n => n.isRead === true), 'All notifications should be marked as read');
+
+// Approver notifications
+const approverNotifs = getNotifications('USR002', 'approval');
+assert.ok(Array.isArray(approverNotifs), 'Approver notifs should be an array');
 
 
 console.log('ALL ASSERTIONS PASSED! Self-check completed successfully.');

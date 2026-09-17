@@ -32,8 +32,10 @@ export class LeaveRequestController {
   @ApiStandardErrorResponses()
   async findAll(@Req() req: AuthReq, @Query() q: ListLeaveRequestDto) {
     const filter = { ...q };
-    // Non-admin default to own requests
-    if (!filter.uid_user_system && !['RS001', 'RS002', 'admin_sit', 'admin_sis'].includes(req.user?.role || '')) {
+    const approverRoles = ['RS001', 'RS002', 'admin_sit', 'admin_sis', 'admin', 'staff_it', 'kepala_it', 'kepala_dept', 'approval', 'RS003', 'RS004'];
+    const isPrivileged = approverRoles.includes(req.user?.role || '');
+    // Non-admin / non-approver default to own requests
+    if (!filter.uid_user_system && !isPrivileged) {
       filter.uid_user_system = req.user?.sub;
     }
     return ok(await this.svc.findAll(filter));

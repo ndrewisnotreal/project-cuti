@@ -63,7 +63,58 @@ export const DEFAULT_APPROVAL_FLOWS = [
   { id: 'AF003', level: 3, name: 'Kepala Seksi IT (Persetujuan)', assignedRole: 'kepala_it', assignedUserIds: ['USR007', 'USR003'], isMandatory: false, isActive: true }
 ];
 
-export const DEFAULT_LEAVE_REQUESTS = [];
+export const DEFAULT_LEAVE_REQUESTS = [
+  {
+    id: 'LR001',
+    userId: 'USR001',
+    leaveTypeId: 'LT001',
+    startDate: '2026-02-16',
+    endDate: '2026-02-18',
+    totalDays: 3,
+    reason: 'Keperluan keluarga di luar kota',
+    substituteId: 'USR004',
+    status: 'approved',
+    createdAt: '2026-02-10T08:30:00.000Z',
+    updatedAt: '2026-02-11T14:20:00.000Z',
+    approvalRecords: [
+      { approverId: 'USR002', level: 1, action: 'approve', notes: 'Tugas telah didelegasikan', signature: 'Raka Pratama', createdAt: '2026-02-10T11:00:00.000Z' },
+      { approverId: 'USR008', level: 2, action: 'approve', notes: 'Disetujui', signature: 'Emil Salim', createdAt: '2026-02-11T14:20:00.000Z' }
+    ],
+    documents: []
+  },
+  {
+    id: 'LR002',
+    userId: 'USR001',
+    leaveTypeId: 'LT002',
+    startDate: '2026-03-24',
+    endDate: '2026-03-25',
+    totalDays: 2,
+    reason: 'Istirahat pasca rawat jalan demam',
+    substituteId: 'USR004',
+    status: 'returned',
+    createdAt: '2026-03-23T08:45:00.000Z',
+    updatedAt: '2026-03-23T11:30:00.000Z',
+    approvalRecords: [
+      { approverId: 'USR002', level: 1, action: 'return', notes: 'Surat dokter buram, mohon unggah foto/scan yang jelas.', signature: 'Raka Pratama', createdAt: '2026-03-23T11:30:00.000Z' }
+    ],
+    documents: [{ fileName: 'surat-sakit.pdf', fileSize: '145 KB' }]
+  },
+  {
+    id: 'LR003',
+    userId: 'USR004',
+    leaveTypeId: 'LT001',
+    startDate: '2026-04-14',
+    endDate: '2026-04-16',
+    totalDays: 3,
+    reason: 'Mudik Idul Fitri',
+    substituteId: 'USR001',
+    status: 'submitted',
+    createdAt: '2026-03-26T09:15:00.000Z',
+    updatedAt: '2026-03-26T09:15:00.000Z',
+    approvalRecords: [],
+    documents: []
+  }
+];
 
 export const DEFAULT_PERMISSION_ROLES = ['user', 'staff_it', 'kepala_it', 'kepala_dept', 'admin', 'admin_sit', 'admin_sis'];
 

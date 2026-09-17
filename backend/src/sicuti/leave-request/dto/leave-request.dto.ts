@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsDateString, IsInt, IsOptional, IsString, Max, MaxLength, Min,
 } from 'class-validator';
@@ -87,6 +88,7 @@ export class ListLeaveRequestDto {
 
   @ApiPropertyOptional({ example: 2026 })
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(2020)
   @Max(2099)
@@ -94,12 +96,14 @@ export class ListLeaveRequestDto {
 
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number;
 
   @ApiPropertyOptional({ example: 20 })
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   limit?: number;

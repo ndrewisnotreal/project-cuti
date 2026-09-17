@@ -18,7 +18,7 @@ import {
 const STORAGE_KEY = 'sicuti_data';
 const AUTH_KEY = 'sicuti_auth';
 const TOKEN_KEY = 'sicuti_token';
-const DATA_VERSION = '5.1';
+const DATA_VERSION = '5.3';
 
 const API_BASE = typeof window !== 'undefined'
   ? (window.location.port === '5174' ? '' : 'http://localhost:3001')
@@ -193,7 +193,8 @@ function loadStoredData() {
     permissionRoleLabels: JSON.parse(JSON.stringify(DEFAULT_PERMISSION_ROLE_LABELS)),
     permissionModules: JSON.parse(JSON.stringify(DEFAULT_PERMISSION_MODULES)),
     permissions: JSON.parse(JSON.stringify(DEFAULT_PERMISSIONS)),
-    roleChangeRequests: JSON.parse(JSON.stringify(DEFAULT_ROLE_CHANGE_REQUESTS))
+    roleChangeRequests: JSON.parse(JSON.stringify(DEFAULT_ROLE_CHANGE_REQUESTS)),
+    readNotificationIds: []
   };
 
   try {
@@ -218,12 +219,13 @@ function loadStoredData() {
       holidays: parsed.holidays || defaults.holidays,
       leaveBalances: parsed.leaveBalances || defaults.leaveBalances,
       approvalFlows: parsed.approvalFlows || defaults.approvalFlows,
-      leaveRequests: parsed.leaveRequests || defaults.leaveRequests,
+      leaveRequests: (parsed.leaveRequests && parsed.leaveRequests.length > 0) ? parsed.leaveRequests : defaults.leaveRequests,
       permissionRoles: parsed.permissionRoles || defaults.permissionRoles,
       permissionRoleLabels: parsed.permissionRoleLabels || defaults.permissionRoleLabels,
       permissionModules: parsed.permissionModules || defaults.permissionModules,
       permissions: parsed.permissions || defaults.permissions,
-      roleChangeRequests: parsed.roleChangeRequests || defaults.roleChangeRequests
+      roleChangeRequests: parsed.roleChangeRequests || defaults.roleChangeRequests,
+      readNotificationIds: Array.isArray(parsed.readNotificationIds) ? parsed.readNotificationIds : []
     };
   } catch {
     return defaults;
@@ -253,7 +255,7 @@ export async function syncFromBackend() {
     }
 
     const [reqs, balances, holidays, leaveTypes, policy, flows, depts] = await Promise.all([
-      apiFetch('/sicuti/leave-request?limit=100'),
+      apiFetch('/sicuti/leave-request'),
       apiFetch('/sicuti/leave-balance'),
       apiFetch('/sicuti/holiday'),
       apiFetch('/sicuti/leave-type'),
@@ -263,7 +265,7 @@ export async function syncFromBackend() {
     ]);
 
     if (reqs?.data?.data && Array.isArray(reqs.data.data)) {
-      sicutiState.leaveRequests = reqs.data.data.map((r) => ({
+      const backendReqs = reqs.data.data.map((r) => ({
         id: r.id_request,
         userId: r.uid_user_system,
         userName: r.requester_name,
@@ -291,6 +293,14 @@ export async function syncFromBackend() {
         })),
         documents: r.attachment_url ? [{ fileName: r.attachment_url }] : []
       }));
+
+      const merged = [...backendReqs];
+      for (const localReq of sicutiState.leaveRequests) {
+        if (!merged.some((m) => m.id === localReq.id)) {
+          merged.push(localReq);
+        }
+      }
+      sicutiState.leaveRequests = merged;
     }
 
     if (balances?.data && Array.isArray(balances.data)) {
@@ -349,7 +359,9 @@ export async function syncFromBackend() {
         assignedRole: f.assigned_role,
         isMandatory: Boolean(f.is_mandatory),
         isActive: Boolean(f.is_active),
-        assignedUserIds: (f.users || []).map((u) => u.uid_user_system || u.id)
+        assignedUserIds: (f.users || [])
+          .map((u) => (typeof u === 'string' ? u : u?.uid_user_system || u?.id))
+          .filter(Boolean)
       }));
     }
 
@@ -1012,7 +1024,10 @@ export function formatDate(dateStr) {
   const clean = String(dateStr).split('T')[0];
   const parts = clean.split('-');
   if (parts.length === 3) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
     const d = parseInt(parts[2], 10);
     const m = parseInt(parts[1], 10) - 1;
     const y = parts[0];
@@ -1029,7 +1044,7 @@ export function formatDateTime(dateStr) {
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString('id-ID', {
     day: 'numeric',
-    month: 'short',
+    month: 'long',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
@@ -1146,45 +1161,237 @@ export function createRoleChangeRequest({ userId, currentRole, requestedRole, re
   return newReq;
 }
 
+export function formatTimeAgo(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  if (diffMs < 0) return 'Baru saja';
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHour / 24);
+
+  if (diffSec < 60) return 'Baru saja';
+  if (diffMin < 60) return `${diffMin} mnt lalu`;
+  if (diffHour < 24) return `${diffHour} jam lalu`;
+  if (diffDays === 1) return 'Kemarin';
+  if (diffDays < 7) return `${diffDays} hr lalu`;
+  return formatDate(dateStr);
+}
+
+export function markNotificationAsRead(id) {
+  if (!sicutiState.readNotificationIds) {
+    sicutiState.readNotificationIds = [];
+  }
+  if (!sicutiState.readNotificationIds.includes(id)) {
+    sicutiState.readNotificationIds.push(id);
+    saveToLocalStorage();
+  }
+}
+
+export function markAllNotificationsAsRead(userId, primaryRole) {
+  if (!sicutiState.readNotificationIds) {
+    sicutiState.readNotificationIds = [];
+  }
+  const notifs = getNotifications(userId, primaryRole);
+  for (const n of notifs) {
+    if (!sicutiState.readNotificationIds.includes(n.id)) {
+      sicutiState.readNotificationIds.push(n.id);
+    }
+  }
+  saveToLocalStorage();
+}
+
+function buildAdminNotifs(userId, readIds) {
+  const adminUser = getUser(userId);
+  const divId = adminUser?.adminDivision;
+  const list = [];
+
+  (sicutiState.roleChangeRequests || []).forEach((rc) => {
+    if (rc.status === 'pending') {
+      const nid = `notif-rc-${rc.id}`;
+      list.push({
+        id: nid,
+        type: 'role_request',
+        title: 'Permintaan Peran Baru',
+        message: `${getUser(rc.userId)?.name || rc.userId} mengajukan peran "${rc.requestedRole}".`,
+        requestId: null,
+        createdAt: rc.createdAt,
+        timeAgo: formatTimeAgo(rc.createdAt),
+        isRead: readIds.has(nid),
+        page: 'admin-monitoring',
+        targetRoute: '/admin/accounts'
+      });
+    }
+  });
+
+  sicutiState.leaveRequests
+    .filter((r) => ['submitted', 'pending_validation', 'processing'].includes(r.status) && (!divId || getUser(r.userId)?.department === divId))
+    .forEach((r) => {
+      const lt = sicutiState.leaveTypes.find((t) => t.id === r.leaveTypeId);
+      const nid = `notif-admin-${r.id}`;
+      list.push({
+        id: nid,
+        type: 'submitted',
+        title: `Pengajuan ${lt?.name || 'Cuti'} Baru`,
+        message: `${getUser(r.userId)?.name || 'Karyawan'} (${r.totalDays} hari, ${formatDate(r.startDate)}) menunggu verifikasi.`,
+        requestId: r.id,
+        createdAt: r.createdAt,
+        timeAgo: formatTimeAgo(r.createdAt),
+        isRead: readIds.has(nid),
+        page: 'admin-monitoring',
+        targetRoute: '/admin/monitoring'
+      });
+    });
+
+  return list;
+}
+
+function buildApproverNotifs(userId, readIds) {
+  const approver = getUser(userId);
+  const list = [];
+  sicutiState.leaveRequests
+    .filter((r) => ['submitted', 'pending_validation'].includes(r.status) && canUserApprove(r, approver))
+    .forEach((r) => {
+      const lt = sicutiState.leaveTypes.find((t) => t.id === r.leaveTypeId);
+      const reqUser = getUser(r.userId);
+      const nid = `notif-appr-${r.id}`;
+      list.push({
+        id: nid,
+        type: 'pending',
+        title: 'Menunggu Persetujuan Anda',
+        message: `${reqUser?.name || 'Karyawan'} (${reqUser?.department || 'IT'}) mengajukan ${lt?.name || 'Cuti'} (${r.totalDays} hari, ${formatDate(r.startDate)})`,
+        requestId: r.id,
+        createdAt: r.createdAt,
+        timeAgo: formatTimeAgo(r.createdAt),
+        isRead: readIds.has(nid),
+        page: 'pending',
+        targetRoute: '/approval/pending'
+      });
+    });
+  return list;
+}
+
+
+
+function buildUserNotifs(userId, primaryRole, readIds) {
+  const APPROVAL_ROLES = ['staff_it', 'kepala_it', 'kepala_dept', 'approval'];
+  const list = [];
+  const userRequests = sicutiState.leaveRequests.filter((r) => r.userId === userId);
+
+  userRequests.forEach((r) => {
+    const lt = sicutiState.leaveTypes.find((t) => t.id === r.leaveTypeId);
+    const ltName = lt?.name || 'Cuti';
+    const lastRecord = (r.approvalRecords || [])[r.approvalRecords.length - 1];
+    const approverUser = lastRecord ? getUser(lastRecord.approverId) : null;
+    const approverName = approverUser?.name || 'Atasan';
+
+    if (r.status === 'approved') {
+      const nid = `notif-user-app-${r.id}`;
+      list.push({
+        id: nid,
+        type: 'approved',
+        title: `${ltName} Disetujui`,
+        message: `Pengajuan ${r.totalDays} hari (${formatDate(r.startDate)}) telah disetujui penuh oleh ${approverName}.`,
+        requestId: r.id,
+        createdAt: r.updatedAt || r.createdAt,
+        timeAgo: formatTimeAgo(r.updatedAt || r.createdAt),
+        isRead: readIds.has(nid),
+        page: 'history',
+        targetRoute: '/leave/history'
+      });
+    } else if (r.status === 'returned') {
+      const nid = `notif-user-ret-${r.id}`;
+      const note = lastRecord?.notes ? `Catatan: "${lastRecord.notes}"` : 'Silakan sesuaikan dokumen atau jadwal.';
+      list.push({
+        id: nid,
+        type: 'returned',
+        title: `${ltName} Perlu Revisi`,
+        message: `${approverName} mengembalikan pengajuan: ${note}`,
+        requestId: r.id,
+        createdAt: r.updatedAt || r.createdAt,
+        timeAgo: formatTimeAgo(r.updatedAt || r.createdAt),
+        isRead: readIds.has(nid),
+        page: 'history',
+        targetRoute: '/leave/history'
+      });
+    } else if (r.status === 'rejected') {
+      const nid = `notif-user-rej-${r.id}`;
+      const note = lastRecord?.notes ? `Alasan: "${lastRecord.notes}"` : '';
+      list.push({
+        id: nid,
+        type: 'rejected',
+        title: `${ltName} Ditolak`,
+        message: `Pengajuan cuti ditolak oleh ${approverName}. ${note}`,
+        requestId: r.id,
+        createdAt: r.updatedAt || r.createdAt,
+        timeAgo: formatTimeAgo(r.updatedAt || r.createdAt),
+        isRead: readIds.has(nid),
+        page: 'history',
+        targetRoute: '/leave/history'
+      });
+    } else if (r.status === 'submitted' || r.status === 'pending_validation') {
+      const nid = `notif-user-sub-${r.id}`;
+      list.push({
+        id: nid,
+        type: 'pending',
+        title: `${ltName} Sedang Diproses`,
+        message: `Pengajuan ${r.totalDays} hari (${formatDate(r.startDate)}) sedang ditinjau atasan.`,
+        requestId: r.id,
+        createdAt: r.createdAt,
+        timeAgo: formatTimeAgo(r.createdAt),
+        isRead: readIds.has(nid),
+        page: 'history',
+        targetRoute: '/leave/history'
+      });
+    }
+  });
+
+  if (primaryRole === 'user' || !APPROVAL_ROLES.includes(primaryRole)) {
+    const balance = (sicutiState.leaveBalances || []).find((b) => b.userId === userId && b.year === 2026);
+    if (balance && balance.carryOverDays > 0) {
+      const nid = `notif-user-carryover-${balance.id}`;
+      list.push({
+        id: nid,
+        type: 'info',
+        title: 'Sisa Saldo Carry Over 2025',
+        message: `Anda memiliki ${balance.carryOverDays} hari kuota sisa berlaku hingga ${formatDate(balance.carryOverExpiryDate || '2026-06-30')}.`,
+        requestId: null,
+        createdAt: '2026-01-01T08:00:00.000Z',
+        timeAgo: 'Bulan ini',
+        isRead: readIds.has(nid),
+        page: 'balance',
+        targetRoute: '/leave/balance'
+      });
+    }
+  }
+
+  return list;
+}
+
 export function getNotifications(userId, primaryRole) {
   const APPROVAL_ROLES = ['staff_it', 'kepala_it', 'kepala_dept', 'approval'];
   const ADMIN_ROLES = ['admin', 'admin_sit', 'admin_sis'];
+  const readIds = new Set(sicutiState.readNotificationIds || []);
+  let notifs = [];
 
-  // ── Admin: pending requests di divisi mereka ──
   if (ADMIN_ROLES.includes(primaryRole)) {
-    const adminUser = getUser(userId);
-    const divId = adminUser?.adminDivision;
-    return sicutiState.leaveRequests
-      .filter((r) => ['submitted', 'pending_validation', 'processing'].includes(r.status) && (!divId || getUser(r.userId)?.department === divId))
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 8)
-      .map((r) => {
-        const lt = sicutiState.leaveTypes.find((t) => t.id === r.leaveTypeId);
-        return { id: r.id, requestId: r.id, status: r.status, requesterName: getUser(r.userId)?.name || 'Karyawan', leaveTypeName: lt?.name || '-', createdAt: r.createdAt, page: 'admin-monitoring' };
-      });
+    notifs = notifs.concat(buildAdminNotifs(userId, readIds));
+  } else if (APPROVAL_ROLES.includes(primaryRole)) {
+    notifs = notifs.concat(buildApproverNotifs(userId, readIds));
+  } else {
+    notifs = notifs.concat(buildUserNotifs(userId, primaryRole, readIds));
   }
 
-  // ── Approval roles: requests yang giliran mereka ──
-  if (APPROVAL_ROLES.includes(primaryRole)) {
-    const approver = getUser(userId);
-    return sicutiState.leaveRequests
-      .filter((r) => ['submitted', 'pending_validation'].includes(r.status) && canUserApprove(r, approver))
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 8)
-      .map((r) => {
-        const lt = sicutiState.leaveTypes.find((t) => t.id === r.leaveTypeId);
-        return { id: r.id, requestId: r.id, status: r.status, requesterName: getUser(r.userId)?.name || 'Karyawan', leaveTypeName: lt?.name || '-', createdAt: r.createdAt, page: 'pending' };
-      });
-  }
-
-  // ── User: notif agregat (draft/returned) + (approved/rejected) ──
-  const requests = sicutiState.leaveRequests.filter((r) => r.userId === userId);
-  const notifications = [];
-  const draftCount = requests.filter((r) => ['draft', 'returned'].includes(r.status)).length;
-  const updateCount = requests.filter((r) => ['approved', 'rejected'].includes(r.status)).length;
-  if (draftCount) notifications.push({ id: 'user-draft', label: `${draftCount} pengajuan perlu dilanjutkan`, page: 'history', status: 'returned' });
-  if (updateCount) notifications.push({ id: 'user-update', label: `${updateCount} pengajuan memiliki pembaruan status`, page: 'history', status: 'approved' });
-  return notifications;
+  const seen = new Set();
+  return notifs
+    .filter((n) => {
+      if (seen.has(n.id)) return false;
+      seen.add(n.id);
+      return true;
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
 export function updateUserAccount(userId, { name, email, password, isActive }) {

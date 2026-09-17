@@ -4,25 +4,20 @@ import {
     currentUser,
     activeRole,
     switchRole,
-    logout,
-    sicutiState,
-    getNotifications,
-    canUserApprove,
-    getUser
+    logout
 } from '@/service/sicutiService';
+import AppNotificationMenu from '@/layout/AppNotificationMenu.vue';
 import { useRouter } from 'vue-router';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import {
     Menu as MenuIcon,
     PanelLeftClose,
     PanelLeft,
-    CalendarDays,
     User,
     CheckCircle2,
     Moon,
     Sun,
-    LogOut,
-    Bell
+    LogOut
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -51,34 +46,6 @@ function handleModeChange(mode) {
     switchRole(mode);
     router.push('/');
 }
-
-// Notifications
-const notifOpen = ref(false);
-const notifications = computed(() => {
-    if (!currentUser.value) return [];
-    return getNotifications(currentUser.value.id, activeRole.value);
-});
-const notifCount = computed(() => notifications.value.length);
-
-function toggleNotif() { notifOpen.value = !notifOpen.value; }
-function closeNotif() { notifOpen.value = false; }
-
-const NOTIF_ROUTE_MAP = { 'admin-monitoring': '/admin/monitoring', pending: '/approval/pending', history: '/leave/history' };
-function navigateFromNotif(page) {
-    const route = NOTIF_ROUTE_MAP[page];
-    if (route) router.push(route);
-    notifOpen.value = false;
-}
-
-function getNotifStatusClass(status) {
-    if (status === 'approved') return 'text-green-600 dark:text-green-400';
-    if (status === 'rejected') return 'text-red-600 dark:text-red-400';
-    if (status === 'returned') return 'text-orange-500 dark:text-orange-400';
-    return 'text-primary';
-}
-
-const isAdminRole = computed(() => ['admin', 'admin_sit', 'admin_sis'].includes(activeRole.value));
-const isApprovalRole = computed(() => ['staff_it', 'kepala_it', 'kepala_dept', 'approval'].includes(activeRole.value));
 </script>
 
 <template>
@@ -103,10 +70,7 @@ const isApprovalRole = computed(() => ['staff_it', 'kepala_it', 'kepala_dept', '
             </button>
             <router-link to="/" class="flex items-center gap-2.5">
                 <img src="/logo-inalum.png" alt="Logo PT INALUM" class="h-8 w-auto object-contain" />
-                <div class="flex flex-col">
-                    <span class="font-bold text-base leading-tight text-primary">SiCuti</span>
-                    <span class="text-[10px] text-muted-color font-normal">PT Indonesia Asahan Aluminium</span>
-                </div>
+                <span class="font-bold text-base leading-tight text-primary">Lebur</span>
             </router-link>
         </div>
 
@@ -138,61 +102,8 @@ const isApprovalRole = computed(() => ['staff_it', 'kepala_it', 'kepala_dept', '
 
         <!-- Right: Persona Switcher + Notif Bell + Dark Mode -->
         <div class="flex items-center gap-2 sm:gap-3">
-            <!-- Notification Bell -->
-            <div class="relative">
-                <button
-                    type="button"
-                    @click="toggleNotif"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-surface-600 dark:text-surface-300 hover:text-surface-900 dark:hover:text-surface-0 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors cursor-pointer relative"
-                    title="Notifikasi"
-                >
-                    <Bell :size="16" :stroke-width="1.75" />
-                    <span
-                        v-if="notifCount > 0"
-                        class="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none"
-                    >{{ notifCount }}</span>
-                </button>
-                <!-- Dropdown -->
-                <div
-                    v-if="notifOpen"
-                    class="absolute right-0 top-full mt-2 w-72 bg-surface-0 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-xl shadow-lg z-50 overflow-hidden"
-                >
-                    <div class="px-4 py-2.5 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between">
-                        <span class="text-xs font-bold text-surface-800 dark:text-surface-100">Notifikasi</span>
-                        <button type="button" @click="closeNotif" class="text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 cursor-pointer text-xs">✕</button>
-                    </div>
-                    <div class="max-h-64 overflow-y-auto">
-                        <div v-if="notifications.length === 0" class="px-4 py-6 text-center text-xs text-surface-400">
-                            Tidak ada notifikasi baru
-                        </div>
-                        <button
-                            v-for="notif in notifications"
-                            :key="notif.id"
-                            type="button"
-                            class="w-full text-left px-4 py-3 border-b border-surface-100 dark:border-surface-800 last:border-0 hover:bg-surface-50 dark:hover:bg-surface-800/50 cursor-pointer"
-                            @click="navigateFromNotif(notif.page)"
-                        >
-                            <!-- Admin: karyawan mengajukan cuti -->
-                            <template v-if="isAdminRole">
-                                <p class="text-xs font-semibold text-surface-800 dark:text-surface-100">{{ notif.requesterName }}</p>
-                                <p class="text-[10px] text-surface-500 mt-0.5">Mengajukan {{ notif.leaveTypeName }}</p>
-                                <p v-if="notif.createdAt" class="text-[10px] text-surface-400 mt-0.5">{{ new Date(notif.createdAt).toLocaleString('id-ID', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) }}</p>
-                            </template>
-                            <!-- Approval roles: menunggu approval mereka -->
-                            <template v-else-if="isApprovalRole">
-                                <p class="text-xs font-semibold text-surface-800 dark:text-surface-100">{{ notif.requesterName }}</p>
-                                <p class="text-[10px] text-surface-500 mt-0.5">{{ notif.leaveTypeName }} — menunggu approval Anda</p>
-                                <p v-if="notif.createdAt" class="text-[10px] text-surface-400 mt-0.5">{{ new Date(notif.createdAt).toLocaleString('id-ID', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) }}</p>
-                            </template>
-                            <!-- User: notif agregat -->
-                            <template v-else>
-                                <p class="text-xs font-semibold" :class="getNotifStatusClass(notif.status)">{{ notif.label }}</p>
-                            </template>
-                        </button>
-                    </div>
-                </div>
-                <div v-if="notifOpen" class="fixed inset-0 z-40" @click="closeNotif"></div>
-            </div>
+            <!-- Notification Popover Menu -->
+            <AppNotificationMenu />
 
             <!-- Dark Mode Toggle -->
             <button
