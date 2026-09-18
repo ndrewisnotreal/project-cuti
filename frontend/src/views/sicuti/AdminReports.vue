@@ -213,7 +213,7 @@ function downloadCSV(csvContent, fileName) {
                 </Column>
                 <Column header="Periode" style="width: 20%">
                     <template #body="{ data }">
-                        {{ formatDate(data.startDate) }} s/d {{ formatDate(data.endDate) }}
+                        {{ formatDate(data.startDate) }} - {{ formatDate(data.endDate) }}
                     </template>
                 </Column>
                 <Column field="totalDays" header="Durasi" style="width: 10%">

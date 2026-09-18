@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { login } from '@/service/sicutiService';
 import { useToast } from 'primevue/usetoast';
+import { User, Lock, LogIn, UserX, CircleAlert } from 'lucide-vue-next';
 
 const router = useRouter();
 const toast = useToast();
@@ -89,7 +90,7 @@ async function handleLogin() {
             <!-- Header Brand -->
             <div class="text-center mb-6">
                 <img src="/logo-inalum.png" alt="Logo PT INALUM" class="h-14 w-auto object-contain mx-auto mb-3" />
-                <h1 class="text-2xl font-black text-primary leading-tight tracking-tight">SiCuti</h1>
+                <h1 class="text-2xl font-black text-primary leading-tight tracking-tight">Lebur</h1>
                 <p class="text-xs text-muted-color mt-1 font-medium">Sistem Manajemen Cuti Digital &bull; PT Indonesia Asahan Aluminium</p>
             </div>
 
@@ -103,7 +104,8 @@ async function handleLogin() {
                         : 'bg-red-50 text-red-900 border border-red-300 dark:bg-red-950/40 dark:text-red-200 dark:border-red-800'
                 ]"
             >
-                <i :class="errorField === 'identifier' ? 'pi pi-user-times' : 'pi pi-times-circle'" class="text-base shrink-0"></i>
+                <UserX v-if="errorField === 'identifier'" :size="16" :stroke-width="1.75" class="shrink-0" />
+                <CircleAlert v-else :size="16" :stroke-width="1.75" class="shrink-0" />
                 <div class="flex-1 font-medium leading-relaxed">{{ errorMessage }}</div>
             </div>
 
@@ -112,7 +114,9 @@ async function handleLogin() {
                 <div>
                     <label class="block font-semibold text-surface-700 dark:text-surface-300 mb-1 text-xs">ID Karyawan / Email</label>
                     <IconField iconPosition="left" class="w-full">
-                        <InputIcon class="pi pi-user text-sm" />
+                        <InputIcon>
+                            <User :size="14" :stroke-width="1.75" class="text-muted-color" />
+                        </InputIcon>
                         <InputText
                             v-model="identifier"
                             @input="onInput('identifier')"
@@ -129,7 +133,9 @@ async function handleLogin() {
                 <div>
                     <label class="block font-semibold text-surface-700 dark:text-surface-300 mb-1 text-xs">Kata Sandi</label>
                     <IconField iconPosition="left" class="w-full">
-                        <InputIcon class="pi pi-lock text-sm" />
+                        <InputIcon>
+                            <Lock :size="14" :stroke-width="1.75" class="text-muted-color" />
+                        </InputIcon>
                         <InputText
                             v-model="password"
                             @input="onInput('password')"
@@ -151,7 +157,10 @@ async function handleLogin() {
                     </div>
                 </div>
 
-                <Button type="submit" label="Masuk ke Sistem" icon="pi pi-sign-in" class="w-full font-bold shadow-xs mt-2" />
+                <Button type="submit" class="w-full font-bold shadow-xs mt-2 flex items-center justify-center gap-2">
+                    <LogIn :size="16" :stroke-width="1.75" />
+                    <span>Masuk ke Sistem</span>
+                </Button>
             </form>
 
         </div>

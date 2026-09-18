@@ -1,4 +1,4 @@
-# SiCuti Frontend - PrimeVue 4
+# Lebur Frontend - PrimeVue 4
 
 Frontend Sistem Manajemen Cuti Digital PT Indonesia Asahan Aluminium (Inalum), dibangun dengan **Vue 3** dan **PrimeVue 4** ([PrimeVue GitHub](https://github.com/primefaces/primevue)).
 

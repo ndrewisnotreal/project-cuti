@@ -2,13 +2,13 @@
 SET search_path TO template, public;
 
 INSERT INTO template.md_menu (kd_menu, nm_menu, icon_menu, link_menu, kd_parent, status, level, urut, urut_global, created_at) VALUES
-('MN_CUTI',   'SiCuti',              NULL,                        NULL,                   NULL,       'A', 1, 5,  20, NOW()),
+('MN_CUTI',   'Lebur',               NULL,                        NULL,                   NULL,       'A', 1, 5,  20, NOW()),
 ('MN_PENGAJ', 'Pengajuan Cuti',      'ri-file-add-line',          '/leave/apply',         'MN_CUTI',  'A', 2, 1,  21, NOW()),
 ('MN_HISTCU', 'Riwayat Cuti',        'ri-history-line',           '/leave/history',       'MN_CUTI',  'A', 2, 2,  22, NOW()),
 ('MN_SALDO',  'Saldo Cuti',          'ri-wallet-3-line',          '/leave/balance',       'MN_CUTI',  'A', 2, 3,  23, NOW()),
 ('MN_APPRV',  'Approval',            NULL,                        NULL,                   NULL,       'A', 1, 6,  24, NOW()),
 ('MN_PNDAPP', 'Pending Approval',    'ri-checkbox-circle-line',   '/approval/pending',    'MN_APPRV', 'A', 2, 1,  25, NOW()),
-('MN_ADMCU',  'Admin SiCuti',        NULL,                        NULL,                   NULL,       'A', 1, 7,  26, NOW()),
+('MN_ADMCU',  'Admin Lebur',         NULL,                        NULL,                   NULL,       'A', 1, 7,  26, NOW()),
 ('MN_ADMMON', 'Monitoring',          'ri-eye-line',               '/admin/monitoring',    'MN_ADMCU', 'A', 2, 1,  27, NOW()),
 ('MN_ADMRPT', 'Laporan',             'ri-bar-chart-line',         '/admin/reports',       'MN_ADMCU', 'A', 2, 2,  28, NOW()),
 ('MN_ADMACC', 'Akun Karyawan',       'ri-user-settings-line',     '/admin/accounts',      'MN_ADMCU', 'A', 2, 3,  29, NOW()),
@@ -22,3 +22,4 @@ ON CONFLICT (kd_menu) DO UPDATE SET
     link_menu = EXCLUDED.link_menu, kd_parent = EXCLUDED.kd_parent,
     status = EXCLUDED.status, level = EXCLUDED.level,
     urut = EXCLUDED.urut, urut_global = EXCLUDED.urut_global;
+--0

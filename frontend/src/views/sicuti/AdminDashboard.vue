@@ -62,7 +62,10 @@ function viewDetail(request) {
 }
 
 // Chart: Pengajuan per Bulan
-const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const monthLabels = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
 
 const monthlyChartData = computed(() => {
     const counts = monthLabels.map((_, month) => {
@@ -267,22 +270,22 @@ const canViewProcessed = computed(() => hasPermission(role.value, 'master_data',
                 </Column>
                 <Column header="Nama">
                     <template #body="{ data }">
-                        <span class="font-bold text-surface-900 dark:text-surface-100">{{ getUser(data.userId)?.name || '-' }}</span>
+                        <span class="font-bold text-surface-900 dark:text-surface-0">{{ getUser(data.userId)?.name || '-' }}</span>
                     </template>
                 </Column>
                 <Column header="Jenis Cuti">
                     <template #body="{ data }">
-                        <span>{{ getLeaveType(data.leaveTypeId)?.name || '-' }}</span>
+                        <span class="text-surface-700 dark:text-surface-200">{{ getLeaveType(data.leaveTypeId)?.name || '-' }}</span>
                     </template>
                 </Column>
                 <Column header="Periode">
                     <template #body="{ data }">
-                        <span>{{ formatDate(data.startDate) }} - {{ formatDate(data.endDate) }}</span>
+                        <span class="text-surface-700 dark:text-surface-200">{{ formatDate(data.startDate) }} - {{ formatDate(data.endDate) }}</span>
                     </template>
                 </Column>
                 <Column header="Hari" style="width: 5rem">
                     <template #body="{ data }">
-                        <span class="font-semibold">{{ data.totalDays }}</span>
+                        <span class="font-semibold text-surface-900 dark:text-surface-0">{{ data.totalDays }}</span>
                     </template>
                 </Column>
                 <Column header="Status" style="width: 8rem">

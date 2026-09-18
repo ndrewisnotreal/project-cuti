@@ -18,12 +18,12 @@ const router = createRouter({
                 {
                     path: '/leave/new',
                     name: 'leave-new',
-                    component: () => import('@/views/sicuti/LeaveForm.vue')
+                    redirect: '/?action=new_leave'
                 },
                 {
                     path: '/leave/edit/:id',
                     name: 'leave-edit',
-                    component: () => import('@/views/sicuti/LeaveForm.vue')
+                    redirect: (to) => ({ path: '/leave/history', query: { editId: to.params.id } })
                 },
                 {
                     path: '/leave/history',

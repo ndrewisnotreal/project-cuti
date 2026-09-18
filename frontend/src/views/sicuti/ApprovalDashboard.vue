@@ -75,7 +75,7 @@ function quickApprove(request) {
         <!-- Dashboard Header & Quick Actions -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-                <h2 class="text-xl font-bold text-surface-900 dark:text-surface-100 leading-tight">Dashboard Persetujuan</h2>
+                <h2 class="text-xl font-bold text-surface-900 dark:text-surface-0 leading-tight">Dashboard Persetujuan</h2>
                 <p class="text-xs text-muted-color mt-0.5">Ringkasan status permohonan cuti dan antrean validasi bawahan</p>
             </div>
             <div class="flex items-center gap-2">
@@ -262,16 +262,16 @@ function quickApprove(request) {
                     </div>
                 </template>
 
-                <Column field="id" header="ID">
-                    <template #body="{ data }">
-                        <span class="font-bold text-xs text-primary">{{ data.id }}</span>
+                <Column header="No" style="width: 3.5rem">
+                    <template #body="{ index }">
+                        <span class="text-muted-color font-medium text-xs">{{ index + 1 }}</span>
                     </template>
                 </Column>
 
                 <Column header="Karyawan">
                     <template #body="{ data }">
                         <div>
-                            <span class="font-semibold text-xs block text-surface-900 dark:text-surface-100">{{ getUser(data.userId)?.name }}</span>
+                            <span class="font-semibold text-xs block text-surface-900 dark:text-surface-0">{{ getUser(data.userId)?.name }}</span>
                             <span class="text-[11px] text-muted-color">{{ getUser(data.userId)?.namecode }} &bull; {{ getUser(data.userId)?.department }} ({{ getUser(data.userId)?.position }})</span>
                         </div>
                     </template>
@@ -279,14 +279,14 @@ function quickApprove(request) {
 
                 <Column header="Jenis Cuti">
                     <template #body="{ data }">
-                        <span class="text-xs font-semibold text-surface-800 dark:text-surface-200">{{ getLeaveType(data.leaveTypeId)?.name || '-' }}</span>
+                        <span class="text-xs font-semibold text-surface-900 dark:text-surface-0">{{ getLeaveType(data.leaveTypeId)?.name || '-' }}</span>
                     </template>
                 </Column>
 
                 <Column header="Periode & Durasi">
                     <template #body="{ data }">
                         <div class="text-xs">
-                            <span class="font-medium">{{ formatDate(data.startDate) }} s/d {{ formatDate(data.endDate) }}</span>
+                            <span class="font-medium text-surface-700 dark:text-surface-200">{{ formatDate(data.startDate) }} - {{ formatDate(data.endDate) }}</span>
                             <span class="font-bold text-primary block mt-0.5">{{ data.totalDays }} hari kerja</span>
                         </div>
                     </template>

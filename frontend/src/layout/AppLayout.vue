@@ -26,7 +26,7 @@ const { mobileMenuOpen, closeMobileMenu, isSidebarCollapsed } = useLayout();
             </aside>
 
             <!-- Mobile Drawer (Pure Navigation) -->
-            <Drawer v-model:visible="mobileMenuOpen" header="Navigasi SiCuti" class="!w-72">
+            <Drawer v-model:visible="mobileMenuOpen" header="Navigasi Lebur" class="!w-72">
                 <div class="h-full flex flex-col overflow-y-auto p-1">
                     <AppMenu :collapsed="false" @item-click="closeMobileMenu" />
                 </div>

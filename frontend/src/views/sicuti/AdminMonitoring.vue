@@ -156,7 +156,7 @@ function removeRequest(req) {
                 </Column>
                 <Column header="Periode & Durasi" style="width: 22%">
                     <template #body="{ data }">
-                        <div>{{ formatDate(data.startDate) }} s/d {{ formatDate(data.endDate) }}</div>
+                        <div>{{ formatDate(data.startDate) }} - {{ formatDate(data.endDate) }}</div>
                         <div class="font-bold text-surface-700 dark:text-surface-300 text-[11px]">{{ data.totalDays }} Hari Kerja</div>
                     </template>
                 </Column>

@@ -1,5 +1,6 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import {
     currentUser,
     getUserBalance,
@@ -11,6 +12,7 @@ import {
     hasPermission
 } from '@/service/sicutiService';
 import LeaveDetailDialog from './LeaveDetailDialog.vue';
+import LeaveFormDialog from './LeaveFormDialog.vue';
 import {
     Wallet,
     CheckCircle2,
@@ -19,13 +21,39 @@ import {
     ArrowRight,
     FolderOpen,
     Eye,
-    Pencil,
     ChevronLeft,
     ChevronRight
 } from 'lucide-vue-next';
 
+const router = useRouter();
+const route = useRoute();
+
 const selectedRequest = ref(null);
 const detailVisible = ref(false);
+
+const isLeaveFormVisible = ref(false);
+const editingLeaveId = ref(null);
+
+function openNewLeave() {
+    editingLeaveId.value = null;
+    isLeaveFormVisible.value = true;
+}
+
+function openEditLeave(id) {
+    editingLeaveId.value = id;
+    isLeaveFormVisible.value = true;
+}
+
+watch(
+    () => route.query.action,
+    (action) => {
+        if (action === 'new_leave') {
+            openNewLeave();
+            router.replace({ query: {} });
+        }
+    },
+    { immediate: true }
+);
 
 const role = computed(() => currentUser.value?.role);
 const canSubmit = computed(() => hasPermission(role.value, 'pengajuan_cuti', 'submit'));
@@ -168,7 +196,7 @@ function viewDetail(request) {
             <Button
                 v-if="canSubmit"
                 class="font-semibold shadow-xs flex items-center gap-2"
-                @click="$router.push('/leave/new')"
+                @click="openNewLeave"
             >
                 <Plus :size="16" :stroke-width="2" />
                 <span>Ajukan Cuti Baru</span>
@@ -223,9 +251,9 @@ function viewDetail(request) {
                                 Belum ada pengajuan cuti yang diajukan.
                             </div>
                         </template>
-                        <Column field="id" header="ID">
-                            <template #body="{ data }">
-                                <span class="font-bold text-xs text-primary">{{ data.id }}</span>
+                        <Column header="No" style="width: 3.5rem">
+                            <template #body="{ index }">
+                                <span class="text-muted-color font-medium text-xs">{{ index + 1 }}</span>
                             </template>
                         </Column>
                         <Column header="Tanggal Diajukan">
@@ -235,17 +263,17 @@ function viewDetail(request) {
                         </Column>
                         <Column header="Jenis Cuti">
                             <template #body="{ data }">
-                                <span class="text-xs font-semibold text-surface-800 dark:text-surface-200">{{ getLeaveType(data.leaveTypeId)?.name || '-' }}</span>
+                                <span class="text-xs font-semibold text-surface-900 dark:text-surface-0">{{ getLeaveType(data.leaveTypeId)?.name || '-' }}</span>
                             </template>
                         </Column>
                         <Column header="Periode Cuti">
                             <template #body="{ data }">
-                                <span class="text-xs">{{ formatDate(data.startDate) }} s/d {{ formatDate(data.endDate) }}</span>
+                                <span class="text-xs text-surface-700 dark:text-surface-200">{{ formatDate(data.startDate) }} - {{ formatDate(data.endDate) }}</span>
                             </template>
                         </Column>
                         <Column header="Durasi">
                             <template #body="{ data }">
-                                <span class="text-xs font-bold text-surface-800 dark:text-surface-200">{{ data.totalDays }} hari</span>
+                                <span class="text-xs font-bold text-surface-900 dark:text-surface-0">{{ data.totalDays }} hari</span>
                             </template>
                         </Column>
                         <Column header="Status">
@@ -253,9 +281,9 @@ function viewDetail(request) {
                                 <Tag :value="getStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" class="text-[11px]" />
                             </template>
                         </Column>
-                        <Column header="Aksi" style="width: 5.5rem; text-align: center">
+                        <Column header="Aksi" style="width: 3.5rem; text-align: center">
                             <template #body="{ data }">
-                                <div class="flex items-center justify-center gap-1">
+                                <div class="flex items-center justify-center">
                                     <button
                                         type="button"
                                         class="p-1.5 text-surface-500 hover:text-primary hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg transition-colors cursor-pointer"
@@ -263,15 +291,6 @@ function viewDetail(request) {
                                         title="Lihat Detail"
                                     >
                                         <Eye :size="15" :stroke-width="1.75" />
-                                    </button>
-                                    <button
-                                        v-if="data.status === 'draft' || data.status === 'returned'"
-                                        type="button"
-                                        class="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20 rounded-lg transition-colors cursor-pointer"
-                                        @click="$router.push(`/leave/edit/${data.id}`)"
-                                        title="Edit Draft"
-                                    >
-                                        <Pencil :size="15" :stroke-width="1.75" />
                                     </button>
                                 </div>
                             </template>
@@ -344,6 +363,7 @@ function viewDetail(request) {
             </div>
         </div>
 
-        <LeaveDetailDialog v-model:visible="detailVisible" :request="selectedRequest" />
+        <LeaveDetailDialog v-model:visible="detailVisible" :request="selectedRequest" @edit="openEditLeave" />
+        <LeaveFormDialog v-model:visible="isLeaveFormVisible" :editId="editingLeaveId" />
     </div>
 </template>

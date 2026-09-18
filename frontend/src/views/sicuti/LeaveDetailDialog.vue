@@ -24,7 +24,7 @@ const props = defineProps({
     request: Object
 });
 
-const emit = defineEmits(['update:visible', 'refresh']);
+const emit = defineEmits(['update:visible', 'refresh', 'edit']);
 const toast = useToast();
 const router = useRouter();
 
@@ -56,7 +56,7 @@ const canCancel = computed(() => {
 
 function editRequest() {
     emit('update:visible', false);
-    router.push(`/leave/edit/${props.request.id}`);
+    emit('edit', props.request.id);
 }
 
 const isApproved = computed(() => props.request?.status === 'approved');
@@ -151,7 +151,7 @@ function printDocument() {
                 <tr><th>ID Karyawan / NIK</th><td>${u?.namecode || '-'}</td></tr>
                 <tr><th>Departemen / Seksi</th><td>${u?.department || '-'} / ${u?.position || '-'}</td></tr>
                 <tr><th>Jenis Cuti</th><td>${lt?.name || '-'}</td></tr>
-                <tr><th>Periode Cuti</th><td>${r.startDate} s/d ${r.endDate} (${r.totalDays} Hari Kerja)</td></tr>
+                <tr><th>Periode Cuti</th><td>${formatDate(r.startDate)} - ${formatDate(r.endDate)} (${r.totalDays} Hari Kerja)</td></tr>
                 <tr><th>Alasan Pengajuan</th><td>${r.reason}</td></tr>
                 <tr><th>Pengganti Tugas</th><td>${substitute.value?.name || '-'}</td></tr>
                 <tr><th>Status Terakhir</th><td><b>${getStatusLabel(r.status)}</b></td></tr>

@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import {
     currentUser,
     getUserBalance,
@@ -9,7 +9,10 @@ import {
     getStatusLabel,
     formatDate
 } from '@/service/sicutiService';
+import LeaveFormDialog from './LeaveFormDialog.vue';
 import { Plus, ShieldCheck } from 'lucide-vue-next';
+
+const isLeaveFormVisible = ref(false);
 
 const userBalance = computed(() => {
     return getUserBalance(currentUser.value?.id);
@@ -34,12 +37,15 @@ const approvedLeaveHistory = computed(() => {
                 <h2 class="text-xl font-bold text-surface-900 dark:text-surface-100">Informasi Saldo Cuti Karyawan</h2>
                 <p class="text-xs text-muted-color">Rincian hak kuota cuti tahunan, carry over, dan mutasi cuti Anda</p>
             </div>
-            <router-link to="/leave/new">
-                <Button severity="success" size="small" class="text-xs font-bold flex items-center gap-1.5">
-                    <Plus :size="14" :stroke-width="2" />
-                    <span>Ajukan Cuti</span>
-                </Button>
-            </router-link>
+            <Button
+                severity="success"
+                size="small"
+                class="text-xs font-bold flex items-center gap-1.5"
+                @click="isLeaveFormVisible = true"
+            >
+                <Plus :size="14" :stroke-width="2" />
+                <span>Ajukan Cuti</span>
+            </Button>
         </div>
 
         <!-- 4 Summary Balance Cards -->
@@ -58,7 +64,7 @@ const approvedLeaveHistory = computed(() => {
                     {{ userBalance.carryOverDays }} <span class="text-xs font-normal text-muted-color">Hari</span>
                 </div>
                 <span class="text-[11px] text-muted-color">
-                    {{ userBalance.carryOverExpiryDate ? `Berlaku s/d ${formatDate(userBalance.carryOverExpiryDate)}` : 'Tidak ada carry over' }}
+                    {{ userBalance.carryOverExpiryDate ? `Berlaku hingga ${formatDate(userBalance.carryOverExpiryDate)}` : 'Tidak ada carry over' }}
                 </span>
             </div>
 
@@ -149,5 +155,7 @@ const approvedLeaveHistory = computed(() => {
                 </div>
             </div>
         </div>
+
+        <LeaveFormDialog v-model:visible="isLeaveFormVisible" />
     </div>
 </template>

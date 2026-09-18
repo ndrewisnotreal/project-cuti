@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import {
     currentUser,
     sicutiState,
@@ -11,14 +12,45 @@ import {
     updateLeaveRequest
 } from '@/service/sicutiService';
 import LeaveDetailDialog from './LeaveDetailDialog.vue';
+import LeaveFormDialog from './LeaveFormDialog.vue';
 import { useToast } from 'primevue/usetoast';
 import { Plus, Search, Eye, Send, Trash2, Pencil } from 'lucide-vue-next';
 
 const toast = useToast();
+const router = useRouter();
+const route = useRoute();
+
 const selectedRequest = ref(null);
 const detailVisible = ref(false);
 const statusFilter = ref(null);
 const searchQuery = ref('');
+
+const isLeaveFormVisible = ref(false);
+const editingLeaveId = ref(null);
+
+function openNewLeave() {
+    editingLeaveId.value = null;
+    isLeaveFormVisible.value = true;
+}
+
+function openEditLeave(id) {
+    editingLeaveId.value = id;
+    isLeaveFormVisible.value = true;
+}
+
+watch(
+    () => [route.query.action, route.query.editId],
+    ([action, editId]) => {
+        if (action === 'new_leave') {
+            openNewLeave();
+            router.replace({ query: {} });
+        } else if (editId) {
+            openEditLeave(editId);
+            router.replace({ query: {} });
+        }
+    },
+    { immediate: true }
+);
 
 const statusOptions = [
     { label: 'Semua Status', value: null },
@@ -81,7 +113,7 @@ function cancelRequest(req) {
                 severity="success"
                 size="small"
                 class="text-xs font-bold flex items-center gap-1.5"
-                @click="$router.push('/leave/new')"
+                @click="openNewLeave"
             >
                 <Plus :size="15" :stroke-width="2" />
                 <span>Ajukan Cuti Baru</span>
@@ -139,7 +171,7 @@ function cancelRequest(req) {
                 </Column>
                 <Column header="Periode" style="width: 22%">
                     <template #body="{ data }">
-                        <div>{{ formatDate(data.startDate) }} s/d {{ formatDate(data.endDate) }}</div>
+                        <div>{{ formatDate(data.startDate) }} - {{ formatDate(data.endDate) }}</div>
                         <div class="text-[11px] font-bold text-primary">({{ data.totalDays }} Hari Kerja)</div>
                     </template>
                 </Column>
@@ -168,7 +200,7 @@ function cancelRequest(req) {
                                 v-if="data.status === 'draft' || data.status === 'returned'"
                                 type="button"
                                 class="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20 rounded-lg transition-colors cursor-pointer"
-                                @click="$router.push(`/leave/edit/${data.id}`)"
+                                @click="openEditLeave(data.id)"
                                 title="Edit Draft"
                             >
                                 <Pencil :size="15" :stroke-width="1.75" />
@@ -201,6 +233,13 @@ function cancelRequest(req) {
         <LeaveDetailDialog
             v-model:visible="detailVisible"
             :request="selectedRequest"
+            @edit="openEditLeave"
+        />
+
+        <!-- Form Dialog (Create / Edit) -->
+        <LeaveFormDialog
+            v-model:visible="isLeaveFormVisible"
+            :editId="editingLeaveId"
         />
     </div>
 </template>

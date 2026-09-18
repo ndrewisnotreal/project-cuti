@@ -6,6 +6,7 @@ import {
 } from '@/service/sicutiService';
 import { useToast } from 'primevue/usetoast';
 import { Plus, Search, Pencil, Ban, Check } from 'lucide-vue-next';
+import Select from 'primevue/select';
 
 const toast = useToast();
 const searchQuery = ref('');
@@ -173,7 +174,7 @@ function toggleStatus(emp) {
                     placeholder="Filter Divisi"
                     class="w-full sm:w-44 text-xs"
                     size="small"
-                />
+                ></Select>
             </div>
             <div class="text-xs text-muted-color w-full sm:w-auto text-right">
                 Total: <span class="font-bold text-surface-900 dark:text-surface-100">{{ filteredUsers.length }}</span> Karyawan
@@ -263,7 +264,7 @@ function toggleStatus(emp) {
                     </div>
                     <div>
                         <label class="block font-medium mb-1">Divisi *</label>
-                        <Select v-model="currentEmployee.department" :options="['SIT', 'SIS']" class="w-full text-xs" />
+                        <Select v-model="currentEmployee.department" :options="['SIT', 'SIS']" class="w-full text-xs"></Select>
                     </div>
                 </div>
                 <div>
@@ -281,7 +282,7 @@ function toggleStatus(emp) {
                     </div>
                     <div>
                         <label class="block font-medium mb-1">Role Hak Akses *</label>
-                        <Select v-model="currentEmployee.role" :options="roleOptions" optionLabel="label" optionValue="value" class="w-full text-xs" />
+                        <Select v-model="currentEmployee.role" :options="roleOptions" optionLabel="label" optionValue="value" class="w-full text-xs"></Select>
                     </div>
                 </div>
                 <div>
